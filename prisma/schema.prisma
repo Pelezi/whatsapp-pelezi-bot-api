@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int         @id @default(autoincrement())
+  
+  // User/Auth fields (from old User model)
+  email         String?      @unique
+  password      String?
+  role          String
+  refreshToken  String?     @map("refresh_token")
+
+  // Relations
+  projects       Project[]   @relation("UserProjects")
+
+  @@map("user")
+}
+
+model Project {
+  id          Int        @id @default(autoincrement())
+  name        String
+  apiUrl      String?    @map("api_url")
+  userNumbersApiUrl String?     @map("user_numbers_api_url")
+  apiKey      String?    @map("api_key")
+
+  // Relations
+  users       User[]     @relation("UserProjects")
+  contacts    Contact[]
+
+  @@map("project")
+}
+
+// Contact/User model for WhatsApp
+model Contact {
+  id         String   @id @default(cuid())
+  waId       String   @unique @map("wa_id") // WhatsApp ID (phone number)
+  name       String?  // Name from WhatsApp
+  customName String?  @map("custom_name") // Custom name set by user
+  profilePic String?  @map("profile_pic")
+  
+  // Project association
+  projectId  Int?     @map("project_id")
+  project    Project? @relation(fields: [projectId], references: [id])
+  
+  // Project selection state (used when contact is in multiple projects)
+  pendingProjectSelection Boolean @default(false) @map("pending_project_selection")
+  availableProjectIds     String?  @map("available_project_ids") // Comma-separated list of project IDs
+  
+  conversations Conversation[]
+  messages      Message[]
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("contacts")
+}
+
+// Conversation thread
+model Conversation {
+  id            String   @id @default(cuid())
+  contactId     String   @unique @map("contact_id")
+  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  lastMessageAt DateTime @map("last_message_at")
+  unreadCount   Int      @default(0) @map("unread_count")
+  
+  messages Message[]
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("conversations")
+}
+
+// Main message model
+model Message {
+  id             String       @id // WhatsApp message ID (wamid.xxx)
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  contactId      String       @map("contact_id")
+  contact        Contact      @relation(fields: [contactId], references: [id])
+  
+  // Message metadata
+  type           MessageType
+  direction      Direction    // inbound or outbound
+  timestamp      BigInt       // Unix timestamp from WhatsApp
+  
+  // Text content
+  textBody       String?      @map("text_body") @db.Text
+  caption        String?      @db.Text
+  
+  // Template message components
+  templateHeader String?      @map("template_header") @db.Text
+  templateFooter String?      @map("template_footer") @db.Text
+  
+  // Media references
+  mediaId        String?      @map("media_id")
+  mediaUrl       String?      @map("media_url") // Original WhatsApp URL (expires)
+  mediaLocalPath String?      @map("media_local_path") // Your server path
+  mediaFilename  String?      @map("media_filename")
+  mediaMimeType  String?      @map("media_mime_type")
+  
+  // Special attributes
+  isVoice        Boolean?     @map("is_voice") // For audio messages
+  isAnimated     Boolean?     @map("is_animated") // For stickers
+  
+  // Location data
+  latitude       Float?
+  longitude      Float?
+  
+  // Reply/Context (for future implementation)
+  replyToId      String?      @map("reply_to_id")
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        Message[]    @relation("MessageReplies")
+  
+  // Reaction data
+  reactionEmoji  String?      @map("reaction_emoji") // Emoji for reaction messages
+  
+  // Status tracking (for outbound messages)
+  status         MessageStatus @default(SENT)
+  sentAt         DateTime?    @map("sent_at")
+  deliveredAt    DateTime?    @map("delivered_at")
+  readAt         DateTime?    @map("read_at")
+  failedAt       DateTime?    @map("failed_at")
+  errorMessage   String?      @map("error_message") @db.Text
+  
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  
+  @@index([conversationId, timestamp])
+  @@index([contactId])
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  STICKER
+  DOCUMENT
+  LOCATION
+  REACTION
+  UNSUPPORTED
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
