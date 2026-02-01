@@ -51,7 +51,7 @@ export class WhatsappService {
 
                     const response = await axios.get(fullUrl, {
                         params: { phone: phoneNumber },
-                        timeout: 60000,
+                        timeout: 63000,
                         headers,
                     });
 
@@ -59,13 +59,13 @@ export class WhatsappService {
                         projectIds.push(project.id);
                     }
                 } catch (error) {
-                    console.log(`Error checking project ${project.id} API: ${error.message}`);
+                    console.log(`Erro buscando a api do projeto ${project.name}: ${error.message}`);
                 }
             }
 
             return projectIds;
         } catch (error) {
-            console.log(`Error checking contact in projects: ${error}`);
+            console.log(`Erro buscando contato nos projetos: ${error}`);
             return [];
         }
     }
