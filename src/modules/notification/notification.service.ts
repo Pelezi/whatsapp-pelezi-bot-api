@@ -224,7 +224,7 @@ export class NotificationService {
             badge: '/notification-badge-72x72.png',
             tag: `message-${conversationId}-${Date.now()}`,
             data: {
-                url: `/chat/${conversationId}`,
+                url: `/chat`,
                 conversationId,
             },
         };
@@ -247,7 +247,7 @@ export class NotificationService {
             badge: '/notification-badge-72x72.png',
             tag: `sent-${conversationId}-${Date.now()}`,
             data: {
-                url: `/chat/${conversationId}`,
+                url: `/chat`,
                 conversationId,
             },
         };
