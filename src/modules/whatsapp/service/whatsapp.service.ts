@@ -3,6 +3,7 @@ import { LoggerService } from '../../common/provider';
 import { PrismaService } from '../../common';
 import { WhatsAppApiHelper, FileStorageHelper } from '../helpers';
 import { $Enums } from '../../../generated/prisma/client';
+import { NotificationService } from '../../notification';
 import axios from 'axios';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class WhatsappService {
 
     public constructor(
         private readonly logger: LoggerService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly notificationService: NotificationService
     ) {
         this.whatsappApi = new WhatsAppApiHelper();
         this.fileStorage = new FileStorageHelper();
@@ -435,6 +437,21 @@ export class WhatsappService {
 
             // Save the regular message
             await this.saveIncomingMessage(message, conversation.id, dbContact.id);
+
+            // Send push notification for new message
+            try {
+                const contactDisplayName = dbContact.customName || dbContact.name || dbContact.waId;
+                const messageBody = message.type === 'text' 
+                    ? message.text.body 
+                    : `Nova mensagem (${message.type})`;
+                await this.notificationService.notifyNewMessage(
+                    contactDisplayName,
+                    messageBody,
+                    conversation.id
+                );
+            } catch (error) {
+                console.log('Error sending push notification:', error.message);
+            }
 
             this.logger.info(`Saved ${message.type} message from ${contact.profile?.name || contact.wa_id}`);
         } catch (error) {
@@ -898,6 +915,7 @@ export class WhatsappService {
                     sentAt: new Date(),
                 },
             });
+
 
             return response;
         } catch (error) {

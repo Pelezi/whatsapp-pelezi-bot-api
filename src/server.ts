@@ -20,8 +20,8 @@ const API_DEFAULT_PREFIX = '/api/v1/';
  *
  * @todo Change the constants below following your API requirements
  */
-const SWAGGER_TITLE = 'API Gerenciador Financeiro';
-const SWAGGER_DESCRIPTION = 'API completa para gerenciar orçamentos, categorias e transações financeiras com sincronização mensal/anual. Permite controlar rendas e despesas, comparar gastos planejados versus reais, e organizar finanças pessoais de forma estruturada.';
+const SWAGGER_TITLE = 'API Pelezi Whatsapp Bot';
+const SWAGGER_DESCRIPTION = 'API completa para gerenciar o Pelezi Whatsapp Bot e suas integrações.';
 const SWAGGER_PREFIX = '/docs';
 
 /**

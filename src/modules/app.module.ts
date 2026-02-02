@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { ProjectModule } from './project/project.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
     imports: [
@@ -12,7 +13,8 @@ import { ProjectModule } from './project/project.module';
         AuthModule,
         UserModule,
         WhatsappModule,
-        ProjectModule
+        ProjectModule,
+        NotificationModule
     ]
 })
 export class ApplicationModule {}

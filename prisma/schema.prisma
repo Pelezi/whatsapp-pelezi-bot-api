@@ -18,6 +18,7 @@ model User {
 
   // Relations
   projects       Project[]   @relation("UserProjects")
+  pushSubscriptions PushSubscription[]
 
   @@map("user")
 }
@@ -161,4 +162,22 @@ enum MessageStatus {
   DELIVERED
   READ
   FAILED
+}
+
+// Push notification subscriptions
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     Int?     @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  endpoint   String   @unique
+  p256dh     String   @map("p256dh_key")
+  auth       String   @map("auth_key")
+  
+  userAgent  String?  @map("user_agent")
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  @@map("push_subscriptions")
 }
