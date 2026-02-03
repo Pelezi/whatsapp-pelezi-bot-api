@@ -925,6 +925,142 @@ export class WhatsappService {
     }
 
     /**
+     * Send password reset template message
+     */
+    public async passwordReset(
+        to: string,
+        name: string,
+        platformName: string,
+        passwordResetUrl: string,
+        requestHost: string
+    ): Promise<any> {
+        try {
+            const components = [
+                {
+                    type: 'header',
+                    parameters: [
+                        {
+                            type: 'text',
+                            parameter_name: 'platform_name',
+                            text: platformName,
+                        },
+                    ],
+                },
+                {
+                    type: 'body',
+                    parameters: [
+                        {
+                            type: 'text',
+                            parameter_name: 'name',
+                            text: name,
+                        },
+                        {
+                            type: 'text',
+                            parameter_name: 'password_reset_url',
+                            text: passwordResetUrl,
+                        },
+                    ],
+                },
+            ];
+
+            const response = await this.whatsappApi.sendTemplateMessage(
+                to,
+                'password_reset_url',
+                'pt_BR',
+                components
+            );
+
+            // Create the formatted message text
+            const messageText = `Olá ${name}
+Segue o link para redefinição de senha da sua conta:
+${passwordResetUrl}
+Se você não solicitou redefinição de senha, desconsidere essa mensagem.`;
+
+            // Check for existing contact with Brazilian number variations (with/without 9)
+            let dbContact = await this.findContactWithBrVariations(to);
+
+            // Find project that matches the request host
+            let matchingProject = null;
+            try {
+                // Remove port from host if present (e.g., "example.com:3000" -> "example.com")
+                const hostname = requestHost.split(':')[0];
+                
+                // Find project where apiUrl contains the request hostname
+                const projects = await this.prisma.project.findMany({
+                    where: {
+                        apiUrl: {
+                            contains: hostname,
+                        },
+                    },
+                });
+
+                if (projects.length > 0) {
+                    matchingProject = projects[0];
+                }
+            } catch (error) {
+                console.log('Error matching project by request host:', error.message);
+            }
+
+            // If no existing contact found, create a new one with custom name and project
+            if (!dbContact) {
+                dbContact = await this.prisma.contact.create({
+                    data: {
+                        waId: to,
+                        name: name,
+                        customName: name,
+                        projectId: matchingProject?.id || null,
+                    },
+                });
+            } else {
+                // Update existing contact with custom name and project if not set
+                await this.prisma.contact.update({
+                    where: { id: dbContact.id },
+                    data: {
+                        customName: name,
+                        projectId: dbContact.projectId || matchingProject?.id || null,
+                    },
+                });
+            }
+
+            // Get or create conversation
+            const conversation = await this.prisma.conversation.upsert({
+                where: { contactId: dbContact.id },
+                update: {
+                    lastMessageAt: new Date(),
+                },
+                create: {
+                    contactId: dbContact.id,
+                    lastMessageAt: new Date(),
+                    unreadCount: 0,
+                },
+            });
+
+            // Save message to database
+            const messageId = response.messages[0].id;
+            await this.prisma.message.create({
+                data: {
+                    id: messageId,
+                    conversationId: conversation.id,
+                    contactId: dbContact.id,
+                    type: $Enums.MessageType.TEXT,
+                    direction: $Enums.Direction.OUTBOUND,
+                    timestamp: BigInt(Date.now()),
+                    textBody: messageText,
+                    templateHeader: `Redefinição de senha ${platformName}`,
+                    templateFooter: 'Plataforma feita por Alessandro Cardoso',
+                    status: $Enums.MessageStatus.SENT,
+                    sentAt: new Date(),
+                },
+            });
+
+            return response;
+        } catch (error) {
+            console.log('Error sending password reset:', error);
+            throw new HttpException('Error sending password reset', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Update contact custom name
      */
     public async updateContactCustomName(contactId: string, customName: string): Promise<any> {

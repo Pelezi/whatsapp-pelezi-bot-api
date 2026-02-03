@@ -71,6 +71,27 @@ export class ConversationController {
         return this.whatsappService.inviteToChurch(to, name, platform, platformUrl, login, password, requestHost);
     }
 
+    @Post('passwordReset')
+    @ApiOperation({ 
+        summary: 'Send password reset template',
+        description: 'Sends a password_reset_url template message for password reset'
+    })
+    @ApiQuery({ name: 'to', description: 'Recipient phone number', required: true })
+    @ApiQuery({ name: 'name', description: 'Recipient name', required: true })
+    @ApiQuery({ name: 'platform_name', description: 'Platform name', required: true })
+    @ApiQuery({ name: 'password_reset_url', description: 'Password reset URL', required: true })
+    @ApiResponse({ status: HttpStatus.OK, description: 'Password reset message sent successfully' })
+    public async passwordReset(
+        @Req() request: FastifyRequest,
+        @Query('to') to: string,
+        @Query('name') name: string,
+        @Query('platform_name') platformName: string,
+        @Query('password_reset_url') passwordResetUrl: string
+    ): Promise<any> {
+        const requestHost = request.headers.host || '';
+        return this.whatsappService.passwordReset(to, name, platformName, passwordResetUrl, requestHost);
+    }
+
     @Patch(':id/custom-name')
     @ApiOperation({ 
         summary: 'Update contact custom name',
