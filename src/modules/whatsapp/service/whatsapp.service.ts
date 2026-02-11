@@ -726,14 +726,49 @@ export class WhatsappService {
             orderBy: { lastMessageAt: 'desc' },
         });
 
+        // For each conversation, find the last inbound message or last outbound template
+        const conversationsWithWindow = await Promise.all(
+            conversations.map(async (conv) => {
+                // Find last inbound message OR last outbound template message
+                const lastRelevantMessage = await this.prisma.message.findFirst({
+                    where: {
+                        conversationId: conv.id,
+                        OR: [
+                            { direction: 'INBOUND' },
+                            {
+                                direction: 'OUTBOUND',
+                                templateHeader: { not: null },
+                            },
+                        ],
+                    },
+                    orderBy: { timestamp: 'desc' },
+                });
+
+                // Calculate if we're within 24h window
+                let isWithin24Hours = false;
+                let lastRelevantMessageTime: Date | null = null;
+                
+                if (lastRelevantMessage) {
+                    lastRelevantMessageTime = new Date(Number(lastRelevantMessage.timestamp) * 1000);
+                    const now = new Date();
+                    const hoursSince = (now.getTime() - lastRelevantMessageTime.getTime()) / (1000 * 60 * 60);
+                    isWithin24Hours = hoursSince < 24;
+                }
+
+                return {
+                    ...conv,
+                    isWithin24Hours,
+                    lastRelevantMessageTime: lastRelevantMessageTime?.toISOString() || null,
+                    messages: conv.messages.map(msg => ({
+                        ...msg,
+                        timestamp: msg.timestamp.toString(),
+                    })),
+                };
+            })
+        );
+
         // Convert BigInt to string for JSON serialization
-        return conversations.map(conv => ({
-            ...conv,
-            messages: conv.messages.map(msg => ({
-                ...msg,
-                timestamp: msg.timestamp.toString(),
-            })),
-        }));
+        return conversationsWithWindow;
     }
 
     /**
