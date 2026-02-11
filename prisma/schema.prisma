@@ -29,6 +29,7 @@ model Project {
   apiUrl      String?    @map("api_url")
   userNumbersApiUrl String?     @map("user_numbers_api_url")
   apiKey      String?    @map("api_key")
+  externalApiKey String? @unique @map("external_api_key") // API key for external APIs to authenticate with this API
 
   // Relations
   users       User[]     @relation("UserProjects")

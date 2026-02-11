@@ -52,4 +52,21 @@ export class ProjectController {
     public async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
         return this.projectService.remove(id);
     }
+
+    @Post(':id/api-key/generate')
+    @ApiOperation({ summary: 'Generate a new API key for the project' })
+    @ApiResponse({ status: 200, description: 'API key generated successfully' })
+    @ApiResponse({ status: 404, description: 'Project not found' })
+    public async generateApiKey(@Param('id', ParseIntPipe) id: number): Promise<{ apiKey: string }> {
+        return this.projectService.generateApiKey(id);
+    }
+
+    @Delete(':id/api-key')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Revoke the API key for the project' })
+    @ApiResponse({ status: 204, description: 'API key revoked successfully' })
+    @ApiResponse({ status: 404, description: 'Project not found' })
+    public async revokeApiKey(@Param('id', ParseIntPipe) id: number): Promise<void> {
+        return this.projectService.revokeApiKey(id);
+    }
 }

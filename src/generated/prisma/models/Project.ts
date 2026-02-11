@@ -40,6 +40,7 @@ export type ProjectMinAggregateOutputType = {
   apiUrl: string | null
   userNumbersApiUrl: string | null
   apiKey: string | null
+  externalApiKey: string | null
 }
 
 export type ProjectMaxAggregateOutputType = {
@@ -48,6 +49,7 @@ export type ProjectMaxAggregateOutputType = {
   apiUrl: string | null
   userNumbersApiUrl: string | null
   apiKey: string | null
+  externalApiKey: string | null
 }
 
 export type ProjectCountAggregateOutputType = {
@@ -56,6 +58,7 @@ export type ProjectCountAggregateOutputType = {
   apiUrl: number
   userNumbersApiUrl: number
   apiKey: number
+  externalApiKey: number
   _all: number
 }
 
@@ -74,6 +77,7 @@ export type ProjectMinAggregateInputType = {
   apiUrl?: true
   userNumbersApiUrl?: true
   apiKey?: true
+  externalApiKey?: true
 }
 
 export type ProjectMaxAggregateInputType = {
@@ -82,6 +86,7 @@ export type ProjectMaxAggregateInputType = {
   apiUrl?: true
   userNumbersApiUrl?: true
   apiKey?: true
+  externalApiKey?: true
 }
 
 export type ProjectCountAggregateInputType = {
@@ -90,6 +95,7 @@ export type ProjectCountAggregateInputType = {
   apiUrl?: true
   userNumbersApiUrl?: true
   apiKey?: true
+  externalApiKey?: true
   _all?: true
 }
 
@@ -185,6 +191,7 @@ export type ProjectGroupByOutputType = {
   apiUrl: string | null
   userNumbersApiUrl: string | null
   apiKey: string | null
+  externalApiKey: string | null
   _count: ProjectCountAggregateOutputType | null
   _avg: ProjectAvgAggregateOutputType | null
   _sum: ProjectSumAggregateOutputType | null
@@ -216,6 +223,7 @@ export type ProjectWhereInput = {
   apiUrl?: Prisma.StringNullableFilter<"Project"> | string | null
   userNumbersApiUrl?: Prisma.StringNullableFilter<"Project"> | string | null
   apiKey?: Prisma.StringNullableFilter<"Project"> | string | null
+  externalApiKey?: Prisma.StringNullableFilter<"Project"> | string | null
   users?: Prisma.UserListRelationFilter
   contacts?: Prisma.ContactListRelationFilter
 }
@@ -226,12 +234,14 @@ export type ProjectOrderByWithRelationInput = {
   apiUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   userNumbersApiUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   apiKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  externalApiKey?: Prisma.SortOrderInput | Prisma.SortOrder
   users?: Prisma.UserOrderByRelationAggregateInput
   contacts?: Prisma.ContactOrderByRelationAggregateInput
 }
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  externalApiKey?: string
   AND?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   OR?: Prisma.ProjectWhereInput[]
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
@@ -241,7 +251,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   apiKey?: Prisma.StringNullableFilter<"Project"> | string | null
   users?: Prisma.UserListRelationFilter
   contacts?: Prisma.ContactListRelationFilter
-}, "id">
+}, "id" | "externalApiKey">
 
 export type ProjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -249,6 +259,7 @@ export type ProjectOrderByWithAggregationInput = {
   apiUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   userNumbersApiUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   apiKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  externalApiKey?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ProjectCountOrderByAggregateInput
   _avg?: Prisma.ProjectAvgOrderByAggregateInput
   _max?: Prisma.ProjectMaxOrderByAggregateInput
@@ -265,6 +276,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   apiUrl?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   userNumbersApiUrl?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
   apiKey?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
+  externalApiKey?: Prisma.StringNullableWithAggregatesFilter<"Project"> | string | null
 }
 
 export type ProjectCreateInput = {
@@ -272,6 +284,7 @@ export type ProjectCreateInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   users?: Prisma.UserCreateNestedManyWithoutProjectsInput
   contacts?: Prisma.ContactCreateNestedManyWithoutProjectInput
 }
@@ -282,6 +295,7 @@ export type ProjectUncheckedCreateInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   users?: Prisma.UserUncheckedCreateNestedManyWithoutProjectsInput
   contacts?: Prisma.ContactUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -291,6 +305,7 @@ export type ProjectUpdateInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   users?: Prisma.UserUpdateManyWithoutProjectsNestedInput
   contacts?: Prisma.ContactUpdateManyWithoutProjectNestedInput
 }
@@ -301,6 +316,7 @@ export type ProjectUncheckedUpdateInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   users?: Prisma.UserUncheckedUpdateManyWithoutProjectsNestedInput
   contacts?: Prisma.ContactUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -311,6 +327,7 @@ export type ProjectCreateManyInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
 }
 
 export type ProjectUpdateManyMutationInput = {
@@ -318,6 +335,7 @@ export type ProjectUpdateManyMutationInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ProjectUncheckedUpdateManyInput = {
@@ -326,6 +344,7 @@ export type ProjectUncheckedUpdateManyInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ProjectListRelationFilter = {
@@ -344,6 +363,7 @@ export type ProjectCountOrderByAggregateInput = {
   apiUrl?: Prisma.SortOrder
   userNumbersApiUrl?: Prisma.SortOrder
   apiKey?: Prisma.SortOrder
+  externalApiKey?: Prisma.SortOrder
 }
 
 export type ProjectAvgOrderByAggregateInput = {
@@ -356,6 +376,7 @@ export type ProjectMaxOrderByAggregateInput = {
   apiUrl?: Prisma.SortOrder
   userNumbersApiUrl?: Prisma.SortOrder
   apiKey?: Prisma.SortOrder
+  externalApiKey?: Prisma.SortOrder
 }
 
 export type ProjectMinOrderByAggregateInput = {
@@ -364,6 +385,7 @@ export type ProjectMinOrderByAggregateInput = {
   apiUrl?: Prisma.SortOrder
   userNumbersApiUrl?: Prisma.SortOrder
   apiKey?: Prisma.SortOrder
+  externalApiKey?: Prisma.SortOrder
 }
 
 export type ProjectSumOrderByAggregateInput = {
@@ -434,6 +456,7 @@ export type ProjectCreateWithoutUsersInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   contacts?: Prisma.ContactCreateNestedManyWithoutProjectInput
 }
 
@@ -443,6 +466,7 @@ export type ProjectUncheckedCreateWithoutUsersInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   contacts?: Prisma.ContactUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -476,6 +500,7 @@ export type ProjectScalarWhereInput = {
   apiUrl?: Prisma.StringNullableFilter<"Project"> | string | null
   userNumbersApiUrl?: Prisma.StringNullableFilter<"Project"> | string | null
   apiKey?: Prisma.StringNullableFilter<"Project"> | string | null
+  externalApiKey?: Prisma.StringNullableFilter<"Project"> | string | null
 }
 
 export type ProjectCreateWithoutContactsInput = {
@@ -483,6 +508,7 @@ export type ProjectCreateWithoutContactsInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   users?: Prisma.UserCreateNestedManyWithoutProjectsInput
 }
 
@@ -492,6 +518,7 @@ export type ProjectUncheckedCreateWithoutContactsInput = {
   apiUrl?: string | null
   userNumbersApiUrl?: string | null
   apiKey?: string | null
+  externalApiKey?: string | null
   users?: Prisma.UserUncheckedCreateNestedManyWithoutProjectsInput
 }
 
@@ -516,6 +543,7 @@ export type ProjectUpdateWithoutContactsInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   users?: Prisma.UserUpdateManyWithoutProjectsNestedInput
 }
 
@@ -525,6 +553,7 @@ export type ProjectUncheckedUpdateWithoutContactsInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   users?: Prisma.UserUncheckedUpdateManyWithoutProjectsNestedInput
 }
 
@@ -533,6 +562,7 @@ export type ProjectUpdateWithoutUsersInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contacts?: Prisma.ContactUpdateManyWithoutProjectNestedInput
 }
 
@@ -542,6 +572,7 @@ export type ProjectUncheckedUpdateWithoutUsersInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contacts?: Prisma.ContactUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -551,6 +582,7 @@ export type ProjectUncheckedUpdateManyWithoutUsersInput = {
   apiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userNumbersApiUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   apiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  externalApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -599,6 +631,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   apiUrl?: boolean
   userNumbersApiUrl?: boolean
   apiKey?: boolean
+  externalApiKey?: boolean
   users?: boolean | Prisma.Project$usersArgs<ExtArgs>
   contacts?: boolean | Prisma.Project$contactsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
@@ -610,6 +643,7 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   apiUrl?: boolean
   userNumbersApiUrl?: boolean
   apiKey?: boolean
+  externalApiKey?: boolean
 }, ExtArgs["result"]["project"]>
 
 export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -618,6 +652,7 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   apiUrl?: boolean
   userNumbersApiUrl?: boolean
   apiKey?: boolean
+  externalApiKey?: boolean
 }, ExtArgs["result"]["project"]>
 
 export type ProjectSelectScalar = {
@@ -626,9 +661,10 @@ export type ProjectSelectScalar = {
   apiUrl?: boolean
   userNumbersApiUrl?: boolean
   apiKey?: boolean
+  externalApiKey?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "apiUrl" | "userNumbersApiUrl" | "apiKey", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "apiUrl" | "userNumbersApiUrl" | "apiKey" | "externalApiKey", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   users?: boolean | Prisma.Project$usersArgs<ExtArgs>
   contacts?: boolean | Prisma.Project$contactsArgs<ExtArgs>
@@ -649,6 +685,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     apiUrl: string | null
     userNumbersApiUrl: string | null
     apiKey: string | null
+    externalApiKey: string | null
   }, ExtArgs["result"]["project"]>
   composites: {}
 }
@@ -1079,6 +1116,7 @@ export interface ProjectFieldRefs {
   readonly apiUrl: Prisma.FieldRef<"Project", 'String'>
   readonly userNumbersApiUrl: Prisma.FieldRef<"Project", 'String'>
   readonly apiKey: Prisma.FieldRef<"Project", 'String'>
+  readonly externalApiKey: Prisma.FieldRef<"Project", 'String'>
 }
     
 

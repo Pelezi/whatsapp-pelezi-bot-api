@@ -908,7 +908,8 @@ export const ProjectScalarFieldEnum = {
   name: 'name',
   apiUrl: 'apiUrl',
   userNumbersApiUrl: 'userNumbersApiUrl',
-  apiKey: 'apiKey'
+  apiKey: 'apiKey',
+  externalApiKey: 'externalApiKey'
 } as const
 
 export type ProjectScalarFieldEnum = (typeof ProjectScalarFieldEnum)[keyof typeof ProjectScalarFieldEnum]

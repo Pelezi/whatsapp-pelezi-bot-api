@@ -1,10 +1,14 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, HttpStatus, Req } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, HttpStatus, Req, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery, ApiSecurity, ApiBearerAuth } from '@nestjs/swagger';
 import { WhatsappService } from '../service';
 import { FastifyRequest } from 'fastify';
+import { ApiKeyOrJwtGuard } from '../../common/security';
 
 @Controller('conversations')
 @ApiTags('conversations')
+@UseGuards(ApiKeyOrJwtGuard)
+@ApiSecurity('api-key')
+@ApiBearerAuth()
 export class ConversationController {
 
     public constructor(

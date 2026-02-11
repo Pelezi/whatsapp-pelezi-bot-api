@@ -39,6 +39,12 @@ function createSwagger(app: INestApplication) {
         .setTitle(SWAGGER_TITLE)
         .setDescription(SWAGGER_DESCRIPTION)
         .addBearerAuth()
+        .addApiKey({
+            type: 'apiKey',
+            name: 'X-API-Key',
+            in: 'header',
+            description: 'API Key para autenticação de APIs externas'
+        }, 'api-key')
         .build();
 
     const document = SwaggerModule.createDocument(app, options);

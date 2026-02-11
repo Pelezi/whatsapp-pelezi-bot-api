@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common';
 import { CreateProjectDto, UpdateProjectDto } from '../model';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class ProjectService {
@@ -84,6 +85,37 @@ export class ProjectService {
 
         await this.prisma.project.delete({
             where: { id },
+        });
+    }
+
+    /**
+     * Generate a new API key for external APIs to authenticate with this API
+     */
+    public async generateApiKey(id: number): Promise<{ apiKey: string }> {
+        // Check if project exists
+        await this.findOne(id);
+
+        // Generate a secure random API key (32 bytes = 64 hex characters)
+        const apiKey = randomBytes(32).toString('hex');
+
+        await this.prisma.project.update({
+            where: { id },
+            data: { externalApiKey: apiKey },
+        });
+
+        return { apiKey };
+    }
+
+    /**
+     * Revoke (delete) the external API key for the project
+     */
+    public async revokeApiKey(id: number): Promise<void> {
+        // Check if project exists
+        await this.findOne(id);
+
+        await this.prisma.project.update({
+            where: { id },
+            data: { externalApiKey: null },
         });
     }
 }
