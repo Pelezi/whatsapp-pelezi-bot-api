@@ -24,3 +24,6 @@ npm-debug.log
 .env
 
 /backups
+
+src/generated
+docker-compose.yml

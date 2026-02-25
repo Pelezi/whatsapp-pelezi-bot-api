@@ -1,5 +1,5 @@
 {
-  "name": "whatsapp-pelezi-bot-api",
+  "name": "gabriel-api",
   "version": "0.1.0",
   "description": "NestJS API project for Whatsapp Pelezi Bot management",
   "author": "Pelezi",
@@ -10,10 +10,10 @@
   },
   "scripts": {
     "clean": "rimraf ./dist",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "start:local": "env-cmd -f .env node dist/server.js",
     "dev": "env-cmd -f .env nodemon",
-    "build": "npx prisma migrate deploy && npx prisma generate && npm run clean && tsc",
+    "build": "npx prisma generate && npm run clean && tsc",
     "test": "env-cmd -f .env jest --config=jest.json",
     "lint": "eslint -c .eslintrc.js --ext .ts 'src/**/*.ts'"
   },
