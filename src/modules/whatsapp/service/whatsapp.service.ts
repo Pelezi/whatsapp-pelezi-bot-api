@@ -1,24 +1,25 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { LoggerService } from '../../common/provider';
 import { PrismaService } from '../../common';
-import { WhatsAppApiHelper, FileStorageHelper } from '../helpers';
+import { WhatsAppApiHelper } from '../helpers';
 import { $Enums } from '../../../generated/prisma/client';
 import { NotificationService } from '../../notification';
+import { AwsService } from '../../common/provider/aws.provider';
+import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
 @Injectable()
 export class WhatsappService {
 
     private whatsappApi: WhatsAppApiHelper;
-    private fileStorage: FileStorageHelper;
 
     public constructor(
         private readonly logger: LoggerService,
         private readonly prisma: PrismaService,
-        private readonly notificationService: NotificationService
+        private readonly notificationService: NotificationService,
+        private readonly awsService: AwsService
     ) {
         this.whatsappApi = new WhatsAppApiHelper();
-        this.fileStorage = new FileStorageHelper();
     }
 
     /**
@@ -490,51 +491,81 @@ export class WhatsappService {
                 messageData.caption = message.image.caption;
                 messageData.mediaId = message.image.id;
                 messageData.mediaMimeType = message.image.mime_type;
-                messageData.mediaLocalPath = await this.downloadAndSaveMedia(
-                    message.image.id,
-                    message.image.mime_type
-                );
+                try {
+                    messageData.mediaLocalPath = await this.downloadAndSaveMedia(
+                        message.image.id,
+                        message.image.mime_type,
+                        'image'
+                    );
+                } catch (error) {
+                    console.log(`Failed to download/upload image media: ${error.message}`);
+                    messageData.textBody = `[Erro ao baixar imagem: ${error.message}] ${messageData.caption || ''}`;
+                }
                 break;
 
             case 'video':
                 messageData.caption = message.video.caption;
                 messageData.mediaId = message.video.id;
                 messageData.mediaMimeType = message.video.mime_type;
-                messageData.mediaLocalPath = await this.downloadAndSaveMedia(
-                    message.video.id,
-                    message.video.mime_type
-                );
+                try {
+                    messageData.mediaLocalPath = await this.downloadAndSaveMedia(
+                        message.video.id,
+                        message.video.mime_type,
+                        'video'
+                    );
+                } catch (error) {
+                    console.log(`Failed to download/upload video media: ${error.message}`);
+                    messageData.textBody = `[Erro ao baixar vídeo: ${error.message}] ${messageData.caption || ''}`;
+                }
                 break;
 
             case 'audio':
                 messageData.mediaId = message.audio.id;
                 messageData.mediaMimeType = message.audio.mime_type;
                 messageData.isVoice = message.audio.voice;
-                messageData.mediaLocalPath = await this.downloadAndSaveMedia(
-                    message.audio.id,
-                    message.audio.mime_type
-                );
+                try {
+                    messageData.mediaLocalPath = await this.downloadAndSaveMedia(
+                        message.audio.id,
+                        message.audio.mime_type,
+                        'audio'
+                    );
+                } catch (error) {
+                    console.log(`Failed to download/upload audio media: ${error.message}`);
+                    messageData.textBody = `[Erro ao baixar áudio: ${error.message}]`;
+                }
                 break;
 
             case 'sticker':
                 messageData.mediaId = message.sticker.id;
                 messageData.mediaMimeType = message.sticker.mime_type;
                 messageData.isAnimated = message.sticker.animated;
-                messageData.mediaLocalPath = await this.downloadAndSaveMedia(
-                    message.sticker.id,
-                    message.sticker.mime_type
-                );
+                try {
+                    messageData.mediaLocalPath = await this.downloadAndSaveMedia(
+                        message.sticker.id,
+                        message.sticker.mime_type,
+                        'sticker'
+                    );
+                } catch (error) {
+                    console.log(`Failed to download/upload sticker media: ${error.message}`);
+                    messageData.textBody = `[Erro ao baixar sticker: ${error.message}]`;
+                }
                 break;
 
             case 'document':
                 messageData.mediaId = message.document.id;
                 messageData.mediaMimeType = message.document.mime_type;
                 messageData.mediaFilename = message.document.filename;
-                messageData.mediaLocalPath = await this.downloadAndSaveMedia(
-                    message.document.id,
-                    message.document.mime_type,
-                    message.document.filename
-                );
+                try {
+                    messageData.mediaLocalPath = await this.downloadAndSaveMedia(
+                        message.document.id,
+                        message.document.mime_type,
+                        'document',
+                        message.document.filename
+                    );
+                } catch (error) {
+                    console.log(`Failed to download/upload document media: ${error.message}`);
+                    messageData.textBody = `[Erro ao baixar documento "${message.document.filename || 'arquivo'}": ${error.message}]`;
+                }
                 break;
 
             case 'location':
@@ -581,6 +612,28 @@ export class WhatsappService {
         try {
             const status = value.statuses[0];
 
+            // Log error details if present (e.g., media too large, download errors)
+            if (status.errors && status.errors.length > 0) {
+                console.log(`Message ${status.id} failed with errors:`, JSON.stringify(status.errors, null, 2));
+            }
+
+            // Check if message exists before updating
+            const existingMessage = await this.prisma.message.findUnique({
+                where: { id: status.id }
+            });
+
+            if (!existingMessage) {
+                // If message doesn't exist and status is 'failed', create it with error info
+                if (status.status === 'failed' && status.recipient_id) {
+                    console.log(`Creating failed message ${status.id} in database (never received original message webhook)`);
+                    await this.createFailedMessage(status);
+                    return;
+                }
+                
+                console.log(`Message ${status.id} not found in database - status: ${status.status}. Skipping update.`);
+                return;
+            }
+
             const updateData: any = {
                 status: this.mapStatus(status.status),
             };
@@ -605,26 +658,136 @@ export class WhatsappService {
             console.log(`Updated message ${status.id} to status: ${status.status}`);
         } catch (error) {
             console.log('Error handling status update:', error);
-            throw new HttpException('Error handling status update', HttpStatus.INTERNAL_SERVER_ERROR);
+            // Don't throw error to prevent webhook failures
         }
     }
 
     /**
-     * Download and save media from WhatsApp
+     * Create a failed message in the database when we receive a failed status
+     * but never received the original message webhook (e.g., media too large)
+     */
+    private async createFailedMessage(status: any): Promise<void> {
+        try {
+            const phoneNumber = status.recipient_id;
+            
+            // Find or create contact (considering Brazilian phone number variations)
+            let contact = await this.findContactWithBrVariations(phoneNumber);
+
+            if (!contact) {
+                contact = await this.prisma.contact.create({
+                    data: {
+                        waId: phoneNumber,
+                        name: phoneNumber
+                    }
+                });
+                console.log(`Created new contact for ${phoneNumber}`);
+            } else {
+                console.log(`Found existing contact for ${phoneNumber} (matched waId: ${contact.waId})`);
+            }
+
+            // Find or create conversation
+            let conversation = await this.prisma.conversation.findFirst({
+                where: { contactId: contact.id }
+            });
+
+            if (!conversation) {
+                conversation = await this.prisma.conversation.create({
+                    data: {
+                        id: `cml${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
+                        contactId: contact.id,
+                        lastMessageAt: new Date(parseInt(status.timestamp) * 1000)
+                    }
+                });
+            }
+
+            // Extract error message
+            let errorMessage = 'Falha ao processar mídia';
+            if (status.errors && status.errors.length > 0) {
+                const error = status.errors[0];
+                if (error.error_data?.details) {
+                    errorMessage = error.error_data.details;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+            }
+
+            // Create the failed message
+            await this.prisma.message.create({
+                data: {
+                    id: status.id,
+                    conversationId: conversation.id,
+                    contactId: contact.id,
+                    type: $Enums.MessageType.UNSUPPORTED,
+                    direction: $Enums.Direction.INBOUND,
+                    timestamp: BigInt(parseInt(status.timestamp) * 1000),
+                    status: $Enums.MessageStatus.FAILED,
+                    failedAt: new Date(parseInt(status.timestamp) * 1000),
+                    textBody: `[❌ Erro de mídia] ${errorMessage}`
+                }
+            });
+
+            // Update conversation last message time
+            await this.prisma.conversation.update({
+                where: { id: conversation.id },
+                data: { 
+                    lastMessageAt: new Date(parseInt(status.timestamp) * 1000),
+                    unreadCount: { increment: 1 }
+                }
+            });
+
+            console.log(`Created failed message ${status.id} for ${phoneNumber}`);
+        } catch (error) {
+            console.log('Error creating failed message:', error);
+        }
+    }
+
+    /**
+     * Download media from WhatsApp, upload to S3 and return S3 key (not full URL)
      */
     private async downloadAndSaveMedia(
         mediaId: string,
         mimeType: string,
+        mediaType: 'image' | 'video' | 'audio' | 'sticker' | 'document',
         filename?: string
     ): Promise<string> {
         try {
             const buffer = await this.whatsappApi.downloadMedia(mediaId);
-            const localPath = await this.fileStorage.saveMediaFile(buffer, mimeType, filename);
-            return localPath;
+
+            // Map media type to folder name
+            const folderMap = {
+                'image': 'images',
+                'video': 'videos',
+                'audio': 'audio',
+                'sticker': 'stickers',
+                'document': 'documents'
+            };
+
+            const folder = folderMap[mediaType];
+            const extension = mimeType.split('/')[1]?.split(';')[0] || 'bin';
+            const s3Key = `whatsapp-media/${folder}/${filename || `${uuidv4()}.${extension}`}`;
+
+            // Upload to S3
+            await this.awsService.uploadFile(buffer, s3Key, mimeType);
+            
+            // Return only the S3 key (not the full CloudFront URL)
+            return s3Key;
         } catch (error) {
-            console.log('Error downloading media:', error);
+            console.log('Error downloading/uploading media:', error);
             throw new HttpException('Error downloading media', HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Transform message media paths to full CloudFront URLs
+     */
+    private transformMessageMediaUrl(message: any): any {
+        if (message.mediaLocalPath) {
+            return {
+                ...message,
+                mediaLocalPath: this.awsService.getCloudFrontUrl(message.mediaLocalPath)
+            };
+        }
+        return message;
     }
 
     /**
@@ -749,7 +912,7 @@ export class WhatsappService {
                 let lastRelevantMessageTime: Date | null = null;
                 
                 if (lastRelevantMessage) {
-                    lastRelevantMessageTime = new Date(Number(lastRelevantMessage.timestamp) * 1000);
+                    lastRelevantMessageTime = new Date(Number(lastRelevantMessage.timestamp));
                     const now = new Date();
                     const hoursSince = (now.getTime() - lastRelevantMessageTime.getTime()) / (1000 * 60 * 60);
                     isWithin24Hours = hoursSince < 24;
@@ -759,10 +922,13 @@ export class WhatsappService {
                     ...conv,
                     isWithin24Hours,
                     lastRelevantMessageTime: lastRelevantMessageTime?.toISOString() || null,
-                    messages: conv.messages.map(msg => ({
-                        ...msg,
-                        timestamp: msg.timestamp.toString(),
-                    })),
+                    messages: conv.messages.map(msg => {
+                        const transformedMsg = this.transformMessageMediaUrl(msg);
+                        return {
+                            ...transformedMsg,
+                            timestamp: transformedMsg.timestamp.toString(),
+                        };
+                    }),
                 };
             })
         );
@@ -794,15 +960,18 @@ export class WhatsappService {
             },
         });
 
-        // Convert BigInt to string for JSON serialization
-        return messages.map(msg => ({
-            ...msg,
-            timestamp: msg.timestamp.toString(),
-            replyTo: msg.replyTo ? {
-                ...msg.replyTo,
-                timestamp: msg.replyTo.timestamp.toString(),
-            } : null,
-        }));
+        // Convert BigInt to string for JSON serialization and add CloudFront URLs
+        return messages.map(msg => {
+            const transformedMsg = this.transformMessageMediaUrl(msg);
+            return {
+                ...transformedMsg,
+                timestamp: transformedMsg.timestamp.toString(),
+                replyTo: transformedMsg.replyTo ? {
+                    ...this.transformMessageMediaUrl(transformedMsg.replyTo),
+                    timestamp: transformedMsg.replyTo.timestamp.toString(),
+                } : null,
+            };
+        });
     }
 
     /**
