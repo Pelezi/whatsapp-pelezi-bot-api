@@ -145,10 +145,9 @@ export class WhatsappService {
             if (!conversation) {
                 conversation = await this.prisma.conversation.upsert({
                     where: { contactId: contact.id },
-                    update: { lastMessageAt: new Date() },
+                    update: {},
                     create: {
                         contactId: contact.id,
-                        lastMessageAt: new Date(),
                         unreadCount: 0,
                     },
                 });
@@ -308,12 +307,10 @@ export class WhatsappService {
             const conversation = await this.prisma.conversation.upsert({
                 where: { contactId: dbContact.id },
                 update: {
-                    lastMessageAt: new Date(parseInt(message.timestamp) * 1000),
                     unreadCount: { increment: 1 },
                 },
                 create: {
                     contactId: dbContact.id,
-                    lastMessageAt: new Date(parseInt(message.timestamp) * 1000),
                     unreadCount: 1,
                 },
             });
@@ -694,8 +691,7 @@ export class WhatsappService {
                 conversation = await this.prisma.conversation.create({
                     data: {
                         id: `cml${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
-                        contactId: contact.id,
-                        lastMessageAt: new Date(parseInt(status.timestamp) * 1000)
+                        contactId: contact.id
                     }
                 });
             }
@@ -726,11 +722,10 @@ export class WhatsappService {
                 }
             });
 
-            // Update conversation last message time
+            // Update conversation unread count
             await this.prisma.conversation.update({
                 where: { id: conversation.id },
                 data: { 
-                    lastMessageAt: new Date(parseInt(status.timestamp) * 1000),
                     unreadCount: { increment: 1 }
                 }
             });
@@ -857,12 +852,6 @@ export class WhatsappService {
                 },
             });
 
-            // Update conversation
-            await this.prisma.conversation.update({
-                where: { id: conversationId },
-                data: { lastMessageAt: new Date() },
-            });
-
             // Convert BigInt to string for JSON serialization
             return {
                 ...message,
@@ -886,12 +875,16 @@ export class WhatsappService {
                     take: 1,
                 },
             },
-            orderBy: { lastMessageAt: 'desc' },
         });
 
         // For each conversation, find the last inbound message or last outbound template
         const conversationsWithWindow = await Promise.all(
             conversations.map(async (conv) => {
+                // Calculate lastMessageAt from the last message
+                const lastMessageAt = conv.messages.length > 0 
+                    ? new Date(Number(conv.messages[0].timestamp)).toISOString()
+                    : conv.createdAt.toISOString();
+
                 // Find last inbound message OR last outbound template message
                 const lastRelevantMessage = await this.prisma.message.findFirst({
                     where: {
@@ -920,6 +913,7 @@ export class WhatsappService {
 
                 return {
                     ...conv,
+                    lastMessageAt,
                     isWithin24Hours,
                     lastRelevantMessageTime: lastRelevantMessageTime?.toISOString() || null,
                     messages: conv.messages.map(msg => {
@@ -932,6 +926,11 @@ export class WhatsappService {
                 };
             })
         );
+
+        // Sort by lastMessageAt descending
+        conversationsWithWindow.sort((a, b) => {
+            return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+        });
 
         // Convert BigInt to string for JSON serialization
         return conversationsWithWindow;
@@ -1092,12 +1091,9 @@ export class WhatsappService {
             // Get or create conversation
             const conversation = await this.prisma.conversation.upsert({
                 where: { contactId: dbContact.id },
-                update: {
-                    lastMessageAt: new Date(),
-                },
+                update: {},
                 create: {
                     contactId: dbContact.id,
-                    lastMessageAt: new Date(),
                     unreadCount: 0,
                 },
             });
@@ -1229,12 +1225,9 @@ Se você não solicitou redefinição de senha, desconsidere essa mensagem.`;
             // Get or create conversation
             const conversation = await this.prisma.conversation.upsert({
                 where: { contactId: dbContact.id },
-                update: {
-                    lastMessageAt: new Date(),
-                },
+                update: {},
                 create: {
                     contactId: dbContact.id,
-                    lastMessageAt: new Date(),
                     unreadCount: 0,
                 },
             });
